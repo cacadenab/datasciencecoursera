@@ -1,82 +1,72 @@
-# Load de plyr library
 library(plyr)
-library(reshape2)
-#Unzip the Samsung Data as long as the zip file is in the working directory
-unzip("getdata_projectfiles_UCI HAR Dataset.zip")
 
+##Download and unzip data
 
-####################### COMMON DATA ################################
+download.file("https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip","run_analysis.zip") 
 
-#Load the features data
-features <- read.table("UCI HAR Dataset/features.txt",header=FALSE)
-gsub(" ", "_", features[,2], fixed = TRUE)
+unzip("run_analysis.zip")
 
-#Load the activiy labels data
-activity_labels <- read.table("UCI HAR Dataset/activity_labels.txt",header=FALSE)
-names(activity_labels) <- c("Activity_id","Activity_name")
+## STEP 1: Merges the training and the test sets to create one data set
+#Read data files into data frames
 
+subject_test <- read.table(file = "UCI HAR Dataset/test/subject_test.txt")
+X_test <- read.table(file = "UCI HAR Dataset/test/X_test.txt")
+Y_test <- read.table(file = "UCI HAR Dataset/test/Y_test.txt")
 
+subject_train <- read.table(file = "UCI HAR Dataset/train/subject_train.txt")
+X_train <- read.table(file = "UCI HAR Dataset/train/X_train.txt")
+Y_train <- read.table(file = "UCI HAR Dataset/train/y_train.txt")
 
+#Bind subject, features and activity data into a data set for train and another for test
 
+test_data <- cbind(subject_test,Y_test,X_test)
+train_data <- cbind(subject_train,Y_train,X_train)
 
-#################### TESTS DATA ####################
+#Bind train and test data into a single data set
 
-#load the subjects data to a dataset
-subject_tests <- read.table("UCI HAR Dataset/test/subject_test.txt",header=FALSE)
-
-
-
-#Load the results of tests
-X_tests <- read.table("UCI HAR Dataset/test/X_test.txt",header=FALSE)
-names(X_tests)  <- t(features[,2])
-
-Y_tests <- read.table("UCI HAR Dataset/test/y_test.txt",header=FALSE)
-
-tests <- cbind(subject_tests,Y_tests,X_tests)
-names(tests) <- c("Subject_id","Activity_id",names(X_tests))
-
-data_tests <- arrange(join(tests,activity_labels),Activity_id)
+all_data <- rbind(train_data,test_data)
 
 
 
-#################### TRAIN DATA ####################
-
-
-subject_train <- read.table("UCI HAR Dataset/train/subject_train.txt",header=FALSE)
-
-X_train <- read.table("UCI HAR Dataset/train/X_train.txt",header=FALSE)
-names(X_train)  <- t(features[,2])
-
-Y_train <- read.table("UCI HAR Dataset/train/y_train.txt",header=FALSE)
-
-train <- cbind(subject_train,Y_train,X_train)
-names(train) <- c("Subject_id","Activity_id",names(X_train))
-
-data_train <- arrange(join(train,activity_labels),Activity_id)
 
 
 
-######## MERGE TRAIN AND TETS DATA ############
-data_total <- rbind(data_train,data_tests)
+##STEP 4: Appropriately labels the data set with descriptive
+#Read Labels and activity names Data
+
+activityLabels <- read.table("UCI HAR Dataset/activity_labels.txt")
+activityLabels[,2] <- as.character(activityLabels[,2])
+features <- read.table("UCI HAR Dataset/features.txt")
+features[,2] <- as.character(features[,2])
 
 
-########### SELECTING AVG AND STD DATA ##########
+#Assing names to data set
 
-selected_data<- data_total[, names(data_total) == "Subject_id" | names(data_total) == "Activity_id"
-                                 | names(data_total) == "Activity_name"
-                                 |  grepl("mean(",names(data_total),fixed = TRUE)  
-                                 |  grepl("std(",names(data_total),fixed = TRUE)]
+colnames(all_data) <- c("subject","activity",features[,2])
 
 
 
-############# GENERATE TIDY DATASET ################################
+##STEP 3: Uses descriptive activity names to name the activities
+#Make activiy a Factor and assigning labels with activity data
+all_data$activity <- factor(all_data$activity, levels = activityLabels[,1], labels = activityLabels[,2])
 
 
-melted_data <- melt(selected_data,id=c("Subject_id","Activity_id","Activity_name"),measure.vars = names(selected_data)[3:68])
 
-tidy_data <- dcast(melted_data, Subject_id+Activity_id+Activity_name ~ variable,mean)
+## STEP 2: Extracts only the measurements on the mean and standard
+#Select features wanted
 
+featuresWanted <- grep(".*-mean.).*|.*-std.).*", features[,2])
+colsWanted.names <- c("subject","activity",features[featuresWanted,2])
 
-############ EXPORT TIDY DATASET ##############
+#subset data according to features required
 
-write.table(tidy_data,file="Course_Project_Tidy_Data.txt",row.names = FALSE)
+ sub<- all_data[,colsWanted.names]
+
+ 
+ ## STEP 5: Creates a second, independent tidy data set with the
+ 
+ #Reshape data
+tidy_data <-  ddply(sub, c("subject","activity"), numcolwise(mean))
+
+#writing final file
+write.table(tidydata,file="tidydata.txt")
