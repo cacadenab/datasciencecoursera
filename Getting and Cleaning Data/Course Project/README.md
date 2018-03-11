@@ -30,5 +30,5 @@ You should create one R script called run_analysis.R that does the following.
  
 R script with anlysis steps. The output is a tidy data set in .txt format.
 
-More info in the CodeBook.txt file
+More info in the [Code book file](CodeBook.txt) file
 
