@@ -69,4 +69,4 @@ colsWanted.names <- c("subject","activity",features[featuresWanted,2])
 tidy_data <-  ddply(sub, c("subject","activity"), numcolwise(mean))
 
 #writing final file
-write.table(tidydata,file="tidydata.txt")
+write.table(tidy_data,file="tidy_data.txt")
